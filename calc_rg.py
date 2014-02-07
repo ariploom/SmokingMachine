@@ -32,7 +32,6 @@ def calc_rg(absorbtions):
 		absorbtions[2]/absorbtions[1], 
 		absorbtions[3]/absorbtions[1]
 		])
-	print experimental_ratios
 
 	radii = linspace(.01,1,100)
 	refractive_indeces = linspace(1.33,1.51,19)
@@ -53,10 +52,6 @@ def calc_rg(absorbtions):
 		m_mid = (m_upper+m_lower)/2
 		s_mid = (s_upper+s_lower)/2
 
-		print r_mid
-		print m_mid
-		print s_mid
-
 		test_points = array([
 			[(r_mid+r_upper)/2,(m_mid+m_upper)/2,(s_mid+s_upper)/2],
 			[(r_mid+r_upper)/2,(m_mid+m_upper)/2,(s_mid+s_lower)/2],
@@ -75,12 +70,9 @@ def calc_rg(absorbtions):
 			test_error = 0
 			for j in range(len(experimental_ratios)):
 				test_error += (experimental_ratios[j] - theoretical_ratios[j,test_points[i,2],test_points[i,1],test_points[i,0]])**2
-			print test_error
 			if test_error < error:
-				
 				error = test_error
 				best_fit = i
-				print best_fit
 
 		if best_fit == 0:
 			r_lower = r_mid
@@ -121,11 +113,9 @@ def calc_rg(absorbtions):
 			m_lower = test_points[7,1]
 			s_upper = test_points[0,2]
 			s_lower = test_points[7,2]
-	return [radii[r_lower], refractive_indeces[m_lower], sigmas[s_lower]]
-
-a = [4.26914938,4.05435422,3.3908557,2.65184825]
-b = [2.93, 2.39, 1.85, 1.41]
-
-
-
-
+	return [
+		radii[r_lower], 
+		refractive_indeces[m_lower], 
+		sigmas[s_lower], 
+		dot(squeeze(scattering_coefficients[:,s_lower,m_lower,r_lower]),.0001**2),
+		error]
