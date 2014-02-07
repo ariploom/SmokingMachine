@@ -6,7 +6,7 @@ from matplotlib.pyplot import *
 
 def analyze_raw_data(experiment):
 	filename = 'raw_data/' + experiment + '.csv'
-	data = genfromtxt(filename, delimiter=',', dtype=None)
+	data = genfromtxt(filename, delimiter=',')
 	
 	puff_volume = data[0,0]
 	puff_duration = data[0,1]
@@ -29,6 +29,8 @@ def analyze_raw_data(experiment):
 	for t in range(len(time)):
 		for l in range(len(wavelengths)):		
 			absorbtions[t,l] = log(base_intensities[l]/intensities[t,l])
+
+	print absorbtions[800,:]
 
 	plot(time, absorbtions)
 	show()
