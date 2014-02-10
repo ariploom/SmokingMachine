@@ -34,8 +34,6 @@ def analyze_raw_data(experiment):
 	b = 16*.1/(3*pi) #path length of light in cm
 	rho = 1.19 #g/cc assuming 70/30 vg/pg
 
-
-
 	for t in range(len(time)):
 		for l in range(len(wavelengths)):		
 			absorbtions[t,l] = log(base_intensities[l]/intensities[t,l])

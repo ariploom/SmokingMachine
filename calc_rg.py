@@ -37,33 +37,16 @@ def calc_rg(absorbtions):
 	refractive_indeces = linspace(1.33,1.51,19)
 	sigmas = linspace(1.3,1.42,13)
 
-	r_lower = 0
-	r_upper = len(radii) - 1
-	m_lower = 0
-	m_upper = len(refractive_indeces) - 1
-	s_lower = 0
-	s_upper = len(sigmas) - 1
-	
+	bounds = array([
+		[0,len(radii)-1],
+		[0,len(refractive_indeces)-1],
+		[0,len(sigmas)-1]
+		])
 
 	error = 1
 
-	while r_lower < r_upper:
-		r_mid = (r_upper+r_lower)/2
-		m_mid = (m_upper+m_lower)/2
-		s_mid = (s_upper+s_lower)/2
-
-		test_points = array([
-			[(r_mid+r_upper)/2,(m_mid+m_upper)/2,(s_mid+s_upper)/2],
-			[(r_mid+r_upper)/2,(m_mid+m_upper)/2,(s_mid+s_lower)/2],
-			[(r_mid+r_upper)/2,(m_mid+m_lower)/2,(s_mid+s_upper)/2],
-			[(r_mid+r_upper)/2,(m_mid+m_lower)/2,(s_mid+s_lower)/2],
-			[(r_mid+r_lower)/2,(m_mid+m_upper)/2,(s_mid+s_upper)/2],
-			[(r_mid+r_lower)/2,(m_mid+m_upper)/2,(s_mid+s_lower)/2],
-			[(r_mid+r_lower)/2,(m_mid+m_lower)/2,(s_mid+s_upper)/2],
-			[(r_mid+r_lower)/2,(m_mid+m_lower)/2,(s_mid+s_lower)/2]
-			])
-
-		
+	while bounds[0,0] < bounds[0,1]:
+		test_points = generate_test_points(bounds)
 		best_fit = -1
 
 		for i in range(len(test_points)):
@@ -74,48 +57,93 @@ def calc_rg(absorbtions):
 				error = test_error
 				best_fit = i
 
-		if best_fit == 0:
-			r_lower = r_mid
-			m_lower = m_mid
-			s_lower = s_mid
-		elif best_fit == 1:
-			r_lower = r_mid
-			m_lower = m_mid
-			s_upper = s_mid
-		elif best_fit == 2:
-			r_lower = r_mid
-			m_upper = m_mid
-			s_lower = s_mid
-		elif best_fit == 3:
-			r_lower = r_mid
-			m_upper = m_mid
-			s_upper = s_mid
-		elif best_fit == 4:
-			r_upper = r_mid
-			m_lower = m_mid
-			s_lower = s_mid
-		elif best_fit == 5:
-			r_upper = r_mid
-			m_lower = m_mid
-			s_upper = s_mid
-		elif best_fit == 6:
-			r_upper = r_mid
-			m_upper = m_mid
-			s_lower = s_mid
-		elif best_fit == 7:
-			r_upper = r_mid
-			m_upper = m_mid
-			s_upper = s_mid
-		else:
-			r_upper = test_points[0,0]
-			r_lower = test_points[7,0]
-			m_upper = test_points[0,1]
-			m_lower = test_points[7,1]
-			s_upper = test_points[0,2]
-			s_lower = test_points[7,2]
+		bounds = adjust_bounds(best_fit, bounds, test_points)
+
 	return [
-		radii[r_lower], 
-		refractive_indeces[m_lower], 
-		sigmas[s_lower], 
-		dot(squeeze(scattering_coefficients[:,s_lower,m_lower,r_lower]),.0001**2),
+		radii[bounds[0,0]], 
+		refractive_indeces[bounds[1,0]], 
+		sigmas[bounds[2,0]], 
+		dot(squeeze(scattering_coefficients[:,bounds[2,0],bounds[1,0],bounds[0,0]]),.0001**2),
 		error]
+
+def generate_test_points(bounds):
+	r_mid = (bounds[0,0]+bounds[0,1])/2
+	if bounds[2,0] < bounds[2,1]:
+		s_mid = (bounds[2,0]+bounds[2,1])/2
+		if bounds[1,0] < bounds[1,1]:
+			m_mid = (bounds[1,0]+bounds[1,1])/2
+			test_points = array([
+				[(r_mid+bounds[0,0])/2,(m_mid+bounds[1,0])/2,(s_mid+bounds[2,0])/2],
+				[(r_mid+bounds[0,1])/2,(m_mid+bounds[1,0])/2,(s_mid+bounds[2,0])/2],
+
+				[(r_mid+bounds[0,0])/2,(m_mid+bounds[1,0])/2,(s_mid+bounds[2,1])/2],
+				[(r_mid+bounds[0,1])/2,(m_mid+bounds[1,0])/2,(s_mid+bounds[2,1])/2],
+
+				[(r_mid+bounds[0,0])/2,(m_mid+bounds[1,1])/2,(s_mid+bounds[2,1])/2],
+				[(r_mid+bounds[0,0])/2,(m_mid+bounds[1,1])/2,(s_mid+bounds[2,0])/2],
+				[(r_mid+bounds[0,1])/2,(m_mid+bounds[1,1])/2,(s_mid+bounds[2,0])/2],
+				[(r_mid+bounds[0,1])/2,(m_mid+bounds[1,1])/2,(s_mid+bounds[2,1])/2]
+				])
+
+		else:
+			test_points = array([
+				[(r_mid+bounds[0,0])/2,bounds[1,0],(s_mid+bounds[2,0])/2],
+				[(r_mid+bounds[0,1])/2,bounds[1,0],(s_mid+bounds[2,0])/2],
+
+				[(r_mid+bounds[0,0])/2,bounds[1,0]/2,(s_mid+bounds[2,1])/2],
+				[(r_mid+bounds[0,1])/2,bounds[1,0]/2,(s_mid+bounds[2,1])/2]
+				])
+
+	else:
+		test_points = array([
+			[(r_mid+bounds[0,0])/2,bounds[1,0],bounds[2,0]],
+			[(r_mid+bounds[0,1])/2,bounds[1,0],bounds[2,0]]
+			])
+
+	return test_points
+
+def adjust_bounds(best_fit, bounds, test_points):
+	r_mid = (bounds[0,0]+bounds[0,1])/2
+	m_mid = (bounds[1,0]+bounds[1,1])/2
+	s_mid = (bounds[2,0]+bounds[2,1])/2
+	
+	if best_fit == 0:
+		bounds[0,1] = r_mid
+		bounds[1,1] = m_mid
+		bounds[2,1] = s_mid
+	elif best_fit == 1:
+		bounds[0,0] = r_mid
+		bounds[1,1] = m_mid
+		bounds[2,1] = s_mid
+	elif best_fit == 2:
+		bounds[0,1] = r_mid
+		bounds[1,1] = m_mid
+		bounds[2,0] = s_mid
+	elif best_fit == 3:
+		bounds[0,0] = r_mid
+		bounds[1,1] = m_mid
+		bounds[2,0] = s_mid
+	elif best_fit == 4:
+		bounds[0,1] = r_mid
+		bounds[1,0] = m_mid
+		bounds[2,0] = s_mid
+	elif best_fit == 5:
+		bounds[0,1] = r_mid
+		bounds[1,0] = m_mid
+		bounds[2,1] = s_mid
+	elif best_fit == 6:
+		bounds[0,0] = r_mid
+		bounds[1,0] = m_mid
+		bounds[2,1] = s_mid
+	elif best_fit == 7:
+		bounds[0,0] = r_mid
+		bounds[1,0] = m_mid
+		bounds[2,0] = s_mid
+	else:
+		bounds[0,1] = test_points[len(test_points)-1,0]
+		bounds[0,0] = test_points[0,0]
+		bounds[1,1] = test_points[len(test_points)-1,1]
+		bounds[1,0] = test_points[0,1]
+		bounds[2,1] = test_points[len(test_points)-1,2]
+		bounds[2,0] = test_points[0,2]
+	return bounds
