@@ -1,9 +1,15 @@
 #!/usr/bin/python
 
 from Tkinter import *
-import tkFileDialog 
+import matplotlib
+matplotlib.use('TkAgg')
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backend_bases import key_press_handler
+from matplotlib.figure import Figure
 
-class Example(Frame):
+from compare_samples import *
+
+class MainWindow(Frame):
   
     def __init__(self, parent):
         Frame.__init__(self, parent)   
@@ -12,6 +18,7 @@ class Example(Frame):
         self.initUI()
         self.centerWindow()
         
+
     def initUI(self):
       
         self.parent.title("Smoking Machine Analysis")
@@ -31,8 +38,13 @@ class Example(Frame):
 def main():
   
     root = Tk()
-    ex = Example(root)
-    root.mainloop()  
+    main_window = MainWindow(root)
+
+    figures = compare_samples('A0001A', 'A0001B', 'A0001C',supress_plots=True)
+    canvas = FigureCanvasTkAgg(figures[1], master=root)
+    canvas.show()
+
+    root.mainloop()
 
 
 if __name__ == '__main__':

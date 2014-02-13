@@ -1,12 +1,10 @@
-#!/usr/bin/env python
-
 from numpy import *
 from calc_rg import *
 from matplotlib.pyplot import *
 
-def analyze_raw_data(experiment):
-	filename = 'raw_data/' + experiment + '.csv'
-	data = genfromtxt(filename, delimiter=',')
+def analyze_raw_data(experiment, suppress_plot=False):
+	read_file = 'raw_data/' + experiment + '.csv'
+	data = genfromtxt(read_file, delimiter=',')
 	
 	puff_volume = data[0,0]
 	puff_duration = data[0,1]
@@ -37,33 +35,58 @@ def analyze_raw_data(experiment):
 	for t in range(len(time)):
 		for l in range(len(wavelengths)):		
 			absorbtions[t,l] = log(base_intensities[l]/intensities[t,l])
-		
-		crunched_absorbtions = calc_rg(absorbtions[t,:])
-		rg[t] = crunched_absorbtions[0]
-		m[t] = crunched_absorbtions[1]
-		sg[t] = crunched_absorbtions[2]
-		k[t,:] = crunched_absorbtions[3]
-		error[t] = crunched_absorbtions[4]
+		if max(absorbtions[t,:]) > .06:
+			crunched_absorbtions = calc_rg(absorbtions[t,:])
+			rg[t] = crunched_absorbtions[0]
+			m[t] = crunched_absorbtions[1]
+			sg[t] = crunched_absorbtions[2]
+			k[t,:] = crunched_absorbtions[3]
+			error[t] = crunched_absorbtions[4]
 
-		n = 0
-		for l in range(len(wavelengths)):
-			n += absorbtions[t,l]/(k[t,l]*b)
-		N[t] = n/len(wavelengths) # particles/cc
-		dam[t] = 2*rg[t]*exp(1.5*(log(sg[t])**2)) # ug
-		c[t] = 1000*N[t]*rho*(pi/6)*(dam[t]*.0001)**3 #mg/cc
+			n = 0
+			for l in range(len(wavelengths)):
+				n += absorbtions[t,l]/(k[t,l]*b)
+			N[t] = n/len(wavelengths) # particles/cc
+			dam[t] = 2*rg[t]*exp(1.5*(log(sg[t])**2)) # ug
+			c[t] = 1000*N[t]*rho*(pi/6)*(dam[t]*.0001)**3 #mg/cc
+		else:
+			rg[t] = 0
+			m[t] = 0
+			sg[t] = 0
+			k[t,:] = 0
+			error[t] = 1
+			N[t] = 0
+			dam[t] = 0
+			c[t] = 0
 
 
-	figure(1)
-	subplot(211)
-	plot(time, rg)
-	subplot(212)
-	plot(time, dam)
+	write_data = transpose(array([
+		time,
+		rg,
+		N,
+		dam,
+		c,
+		m,
+		sg,
+		squeeze(k[:,0]),
+		squeeze(k[:,1]),
+		squeeze(k[:,2]),
+		squeeze(k[:,3]),
+		error]))
+	write_file = 'processed_data/' + experiment + '.csv'
+	savetxt(write_file, write_data, delimiter=",")
 
-	figure(2)
-	subplot(211)
-	semilogy(time, N)
-	subplot(212)
-	plot(time,c)
+	if suppress_plot == False:
+		figure(1)
+		subplot(211)
+		plot(time, rg)
+		subplot(212)
+		plot(time, dam)
 
-	show()
-analyze_raw_data('A0004A')
+		figure(2)
+		subplot(211)
+		semilogy(time, N)
+		subplot(212)
+		plot(time,c)
+
+		show()
